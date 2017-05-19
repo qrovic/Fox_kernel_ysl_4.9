@@ -111,3 +111,6 @@ obj-$(CONFIG_TOUCHSCREEN_GT917D)		+= gt917d/
 obj-$(CONFIG_TOUCHSCREEN_FT5446)	+= ft5446/
 obj-y	+=lct_tp_fm_info.o
 obj-$(CONFIG_VITURALSAR)		+= vituralsar_driver.o
+obj-$(CONFIG_TOUCHSCREEN_FT5435)        += ft5435/
+obj-$(CONFIG_TOUCHSCREEN_IST3038C)       += ist3038c/
+obj-$(CONFIG_TOUCHSCREEN_GT9XX_MIDO)    += gt9xx_mido/
