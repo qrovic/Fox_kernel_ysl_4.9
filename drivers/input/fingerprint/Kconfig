@@ -1,6 +1,15 @@
-config INPUT_FINGERPRINT
+config INPUT_FINGERPRINT_YSL
 				tristate "Fingerprint driver support"
 				help
 				  Say Y here to enable goodix fingerprint driver support!
 source "drivers/input/fingerprint/fpc/Kconfig"
 source "drivers/input/fingerprint/goodix/Kconfig"
+
+config INPUT_FINGERPRINT_MIDO
+
+	tristate "Fingerprint driver support"
+	help
+	  Say Y here to enable goodix fingerprint driver support!
+source "drivers/input/fingerprint/goodix_mido/Kconfig"
+source "drivers/input/fingerprint/fpc_mido/Kconfig"
+
