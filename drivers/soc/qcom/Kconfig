@@ -934,7 +934,8 @@ config BIG_CLUSTER_MIN_FREQ_ADJUST
 	  the cluster is power collpsed it resets the value to physical limits.
 
 config STATE_NOTIFIER
-    bool "State Notifier"
-
-source "drivers/soc/qcom/memshare/Kconfig"
-
+	bool "State Notifier"
+	default n
+	help
+	  A unified display state notifier for kernel drivers for easy porting
+	  between different devices.

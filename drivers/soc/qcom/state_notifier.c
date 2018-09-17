@@ -1,7 +1,8 @@
 /*
  * State Notifier Driver
  *
- * Copyright (c) 2013-2018, Pranav Vashi <neobuddy89@gmail.com>
+ * Copyright (c) 2013-2017, Pranav Vashi <neobuddy89@gmail.com>
+ *           (c) 2017, Joe Maples <joe@frap129.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -13,7 +14,7 @@
 #include <linux/module.h>
 #include <linux/state_notifier.h>
 
-#define DEFAULT_SUSPEND_DEFER_TIME 	10
+#define DEFAULT_SUSPEND_DEFER_TIME 	1
 #define STATE_NOTIFIER			"state_notifier"
 
 /*
