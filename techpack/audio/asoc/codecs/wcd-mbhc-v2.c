@@ -33,12 +33,20 @@
 #include "wcd-mbhc-adc.h"
 #include "wcd-mbhc-v2-api.h"
 
-static int det_Selfiestick_ins = 0; 
-static int headset_state = 0;
+#ifdef CONFIG_MACH_XIAOMI_D2
+bool is_jack_insert = false;
+#endif
 
 void wcd_mbhc_jack_report(struct wcd_mbhc *mbhc,
 			  struct snd_soc_jack *jack, int status, int mask)
 {
+#ifdef CONFIG_MACH_XIAOMI_D2
+	if (!status && (jack->jack->type&WCD_MBHC_JACK_MASK)) {
+		 is_jack_insert = false;
+	} else if (jack->jack->type&WCD_MBHC_JACK_MASK) {
+		 is_jack_insert = true;
+	}
+#endif
 	snd_soc_jack_report(jack, status, mask);
 }
 EXPORT_SYMBOL(wcd_mbhc_jack_report);
@@ -132,11 +140,13 @@ void wcd_enable_curr_micbias(const struct wcd_mbhc *mbhc,
 
 	switch (cs_mb_en) {
 	case WCD_MBHC_EN_CS:
+#ifndef CONFIG_MACH_XIAOMI_D2
 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_MICB_CTRL, 0);
 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_ISRC_CTL, 3);
 		/* Program Button threshold registers as per CS */
 		wcd_program_btn_threshold(mbhc, false);
 		break;
+#endif
 	case WCD_MBHC_EN_MB:
 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_ISRC_CTL, 0);
 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_FSM_EN, 1);
@@ -308,13 +318,25 @@ out_micb_en:
 					  &mbhc->event_state)))
 			/* enable pullup and cs, disable mb */
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_PULLUP);
-		else
+		else {
+#ifdef CONFIG_MACH_XIAOMI_D2
+			if (is_jack_insert)
+				wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
+			else
+				wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_NONE);
+#else
 			/* enable current source and disable mb, pullup*/
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS);
+#endif
+		}
 
 		/* configure cap settings properly when micbias is disabled */
 		if (mbhc->mbhc_cb->set_cap_mode)
+#ifdef CONFIG_MACH_XIAOMI_D2
+			mbhc->mbhc_cb->set_cap_mode(codec, micbias1, is_jack_insert);
+#else
 			mbhc->mbhc_cb->set_cap_mode(codec, micbias1, false);
+#endif
 		break;
 	case WCD_EVENT_PRE_HPHL_PA_OFF:
 		mutex_lock(&mbhc->hphl_pa_lock);
@@ -325,12 +347,20 @@ out_micb_en:
 			hphlocp_off_report(mbhc, SND_JACK_OC_HPHL);
 		clear_bit(WCD_MBHC_EVENT_PA_HPHL, &mbhc->event_state);
 		/* check if micbias is enabled */
-		if (micbias2 || (det_Selfiestick_ins == 1))
+#ifdef CONFIG_MACH_XIAOMI_D2
+		if (is_jack_insert)
+#else
+		if (micbias2)
+#endif
 			/* Disable cs, pullup & enable micbias */
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
-		 else if(!wcd_swch_level_remove(mbhc))
+		else
 			/* Disable micbias, pullup & enable cs */
+#ifdef CONFIG_MACH_XIAOMI_D2
+			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_NONE);
+#else
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS);
+#endif
 		mutex_unlock(&mbhc->hphl_pa_lock);
 		clear_bit(WCD_MBHC_ANC0_OFF_ACK, &mbhc->hph_anc_state);
 		break;
@@ -343,12 +373,20 @@ out_micb_en:
 			hphrocp_off_report(mbhc, SND_JACK_OC_HPHR);
 		clear_bit(WCD_MBHC_EVENT_PA_HPHR, &mbhc->event_state);
 		/* check if micbias is enabled */
+#ifdef CONFIG_MACH_XIAOMI_D2
+		if (is_jack_insert)
+#else
 		if (micbias2)
+#endif
 			/* Disable cs, pullup & enable micbias */
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
-	    else if(!wcd_swch_level_remove(mbhc))
+		else
 			/* Disable micbias, pullup & enable cs */
+#ifdef CONFIG_MACH_XIAOMI_D2
+			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_NONE);
+#else
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS);
+#endif
 		mutex_unlock(&mbhc->hphr_pa_lock);
 		clear_bit(WCD_MBHC_ANC1_OFF_ACK, &mbhc->hph_anc_state);
 		break;
@@ -358,7 +396,7 @@ out_micb_en:
 		if (micbias2)
 			/* Disable cs, pullup & enable micbias */
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
-		else if(!wcd_swch_level_remove(mbhc))
+		else
 			/* Disable micbias, enable pullup & cs */
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_PULLUP);
 		break;
@@ -368,7 +406,7 @@ out_micb_en:
 		if (micbias2)
 			/* Disable cs, pullup & enable micbias */
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
-		else if(!wcd_swch_level_remove(mbhc))
+		else
 			/* Disable micbias, enable pullup & cs */
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_PULLUP);
 		break;
@@ -553,6 +591,10 @@ void wcd_mbhc_hs_elec_irq(struct wcd_mbhc *mbhc, int irq_type,
 }
 EXPORT_SYMBOL(wcd_mbhc_hs_elec_irq);
 
+#ifdef CONFIG_MACH_XIAOMI_D2
+extern int ext_pa_gpio;
+extern int ext_pa_status;
+#endif
 void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 				enum snd_jack_types jack_type)
 {
@@ -561,12 +603,19 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 	u8 fsm_en = 0;
 
 	WCD_MBHC_RSC_ASSERT_LOCKED(mbhc);
-    headset_state = insertion;
+
 	pr_debug("%s: enter insertion %d hph_status %x\n",
 		 __func__, insertion, mbhc->hph_status);
 	if (!insertion) {
 		/* Report removal */
+#ifdef CONFIG_MACH_XIAOMI_D2
+		mbhc->hph_status &= ~(SND_JACK_HEADSET |
+			SND_JACK_LINEOUT |
+			SND_JACK_ANC_HEADPHONE |
+			SND_JACK_UNSUPPORTED);
+#else
 		mbhc->hph_status &= ~jack_type;
+#endif
 		/*
 		 * cancel possibly scheduled btn work and
 		 * report release if we reported button press
@@ -581,8 +630,7 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 			mbhc->buttons_pressed &=
 				~WCD_MBHC_JACK_BUTTON_MASK;
 		}
-		
-        det_Selfiestick_ins = 0;
+
 		if (mbhc->micbias_enable) {
 			if (mbhc->mbhc_cb->mbhc_micbias_control)
 				mbhc->mbhc_cb->mbhc_micbias_control(
@@ -610,6 +658,9 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 		hphlocp_off_report(mbhc, SND_JACK_OC_HPHL);
 		mbhc->current_plug = MBHC_PLUG_TYPE_NONE;
 		mbhc->force_linein = false;
+#ifdef CONFIG_MACH_XIAOMI_D2
+		gpio_set_value(ext_pa_gpio, 0);
+#endif
 	} else {
 		/*
 		 * Report removal of current jack type.
@@ -729,6 +780,12 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 				    (mbhc->hph_status | SND_JACK_MECHANICAL),
 				    WCD_MBHC_JACK_MASK);
 		wcd_mbhc_clr_and_turnon_hph_padac(mbhc);
+
+#ifdef CONFIG_MACH_XIAOMI_D2
+		msleep(500);
+		if (ext_pa_status)
+			gpio_set_value(ext_pa_gpio, 1);
+#endif
 	}
 	pr_debug("%s: leave hph_status %x\n", __func__, mbhc->hph_status);
 }
@@ -800,37 +857,11 @@ void wcd_mbhc_find_plug_and_report(struct wcd_mbhc *mbhc,
 			wcd_mbhc_report_plug(mbhc, 0, SND_JACK_HEADPHONE);
 		if (mbhc->current_plug == MBHC_PLUG_TYPE_HEADSET)
 			wcd_mbhc_report_plug(mbhc, 0, SND_JACK_HEADSET);
-	    if (mbhc->impedance_detect) {
-			mbhc->mbhc_cb->compute_impedance(mbhc,
-					&mbhc->zl, &mbhc->zr);
-			if ((mbhc->zl > 20000) && (mbhc->zr > 20000)) {
-				pr_debug("%s: special accessory \n", __func__);
-				/* Toggle switch back */
-				if (mbhc->mbhc_cfg->swap_gnd_mic &&
-						mbhc->mbhc_cfg->swap_gnd_mic(mbhc->codec,false)) {
-					pr_debug("%s: US_EU gpio present,flip switch again\n"
-							, __func__);
-				}
-				/* enable CS/MICBIAS for headset button detection to work */
-				//wcd_enable_mbhc_supply(mbhc, MBHC_PLUG_TYPE_HEADSET);
-				wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB); 
-				wcd_mbhc_report_plug(mbhc, 1, SND_JACK_HEADSET);
-				det_Selfiestick_ins = 1;
-				 /* add code start 
- 				if (mbhc->is_hs_recording) 
-				 wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB); 
- 				else if ((test_bit(WCD_MBHC_EVENT_PA_HPHL, &mbhc->event_state)) || 
- 				(test_bit(WCD_MBHC_EVENT_PA_HPHR, &mbhc->event_state))) 
- 				wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_PULLUP); 
- 				else 
-				 wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS); 
- 				add code end */
-
-			}
-			else {
-				wcd_mbhc_report_plug(mbhc, 1, SND_JACK_UNSUPPORTED);
-			}
-		}
+#ifdef CONFIG_MACH_XIAOMI_D2
+		wcd_mbhc_report_plug(mbhc, 1, SND_JACK_HEADSET);
+#else
+		wcd_mbhc_report_plug(mbhc, 1, SND_JACK_UNSUPPORTED);
+#endif
 	} else if (plug_type == MBHC_PLUG_TYPE_HEADSET) {
 		if (mbhc->mbhc_cfg->enable_anc_mic_detect &&
 		    mbhc->mbhc_fn->wcd_mbhc_detect_anc_plug_type)
@@ -847,29 +878,6 @@ void wcd_mbhc_find_plug_and_report(struct wcd_mbhc *mbhc,
 		wcd_mbhc_report_plug(mbhc, 1, jack_type);
 	} else if (plug_type == MBHC_PLUG_TYPE_HIGH_HPH) {
 		if (mbhc->mbhc_cfg->detect_extn_cable) {
-			if (mbhc->impedance_detect) {
-			mbhc->mbhc_cb->compute_impedance(mbhc,
-					&mbhc->zl, &mbhc->zr);
-			if ((mbhc->zl > 20000) && (mbhc->zr > 20000)) {
-				printk("%s: special accessory \n", __func__);
-				/* Toggle switch back */
-				if (mbhc->mbhc_cfg->swap_gnd_mic &&
-						mbhc->mbhc_cfg->swap_gnd_mic(mbhc->codec,false)) {
-					printk("%s: US_EU gpio present,flip switch again\n"
-							, __func__);
-				}
-				/* enable CS/MICBIAS for headset button detection to work */
-				//wcd_enable_mbhc_supply(mbhc, MBHC_PLUG_TYPE_HEADSET);
-				wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
-				det_Selfiestick_ins = 1;
-				wcd_mbhc_report_plug(mbhc, 1, SND_JACK_HEADSET);
-			}
-			else {
-				wcd_mbhc_report_plug(mbhc, 1, SND_JACK_LINEOUT);
-			}
-		}
-		else
-		{
 			/* High impedance device found. Report as LINEOUT */
 			wcd_mbhc_report_plug(mbhc, 1, SND_JACK_LINEOUT);
 			pr_debug("%s: setup mic trigger for further detection\n",
@@ -889,8 +897,7 @@ void wcd_mbhc_find_plug_and_report(struct wcd_mbhc *mbhc,
 						 3);
 			wcd_mbhc_hs_elec_irq(mbhc, WCD_MBHC_ELEC_HS_INS,
 					     true);
-		}
-        } else {
+		} else {
 			wcd_mbhc_report_plug(mbhc, 1, SND_JACK_LINEOUT);
 		}
 	} else {
@@ -1211,6 +1218,12 @@ static irqreturn_t wcd_mbhc_release_handler(int irq, void *data)
 	if (mbhc->mbhc_detection_logic == WCD_DETECTION_LEGACY &&
 		mbhc->current_plug == MBHC_PLUG_TYPE_HEADPHONE) {
 		wcd_mbhc_find_plug_and_report(mbhc, MBHC_PLUG_TYPE_HEADSET);
+#ifdef CONFIG_MACH_XIAOMI_D2
+		wcd_mbhc_jack_report(mbhc, &mbhc->headset_jack,
+				0, WCD_MBHC_JACK_MASK);
+		msleep(100);
+		wcd_mbhc_report_plug(mbhc, 1, SND_JACK_HEADSET);
+#endif
 		goto exit;
 
 	}
@@ -1324,37 +1337,11 @@ static irqreturn_t wcd_mbhc_hphr_ocp_irq(int irq, void *data)
 done:
 	return IRQ_HANDLED;
 }
-static ssize_t state_show(struct device *dev,struct device_attribute *attr, char *buf)
-{
-	return sprintf(buf,"%d\n",headset_state);
-}
-
-static DEVICE_ATTR(state,0440,state_show,NULL);
 
 static int wcd_mbhc_initialise(struct wcd_mbhc *mbhc)
 {
 	int ret = 0;
 	struct snd_soc_codec *codec = mbhc->codec;
-	struct device *dev;
-	struct class *dev_class;
-	dev_class = class_create(THIS_MODULE,"h2w");
-	if (IS_ERR(dev_class))
-	{
-		pr_err("%s: class_create fail\n", __func__);
-		goto CREATE_FAIL;
-	}
-	dev = device_create(dev_class,NULL,0,NULL,"device");
-	if (IS_ERR(dev)) 
-	{
-		pr_err("%s: device_create fail\n", __func__);
-		goto CREATE_FAIL;
-	}	
-	if(device_create_file(dev,&dev_attr_state))
-	{	
-		pr_err("%s: device_create_file fail\n", __func__);
-		goto CREATE_FAIL;
-	}
-CREATE_FAIL:
 
 	pr_debug("%s: enter\n", __func__);
 	WCD_MBHC_RSC_LOCK(mbhc);
@@ -1397,7 +1384,7 @@ CREATE_FAIL:
 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_INSREM_DBNC, 4);
 	} else {
 		/* Insertion debounce set to 96ms */
-		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_INSREM_DBNC, 8);
+		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_INSREM_DBNC, 6);
 	}
 
 	/* Button Debounce set to 16ms */
@@ -1980,7 +1967,11 @@ int wcd_mbhc_init(struct wcd_mbhc *mbhc, struct snd_soc_codec *codec,
 	mbhc->is_btn_press = false;
 	mbhc->codec = codec;
 	mbhc->intr_ids = mbhc_cdc_intr_ids;
+#ifdef CONFIG_MACH_XIAOMI_D2
+	mbhc->impedance_detect = false;
+#else
 	mbhc->impedance_detect = impedance_det_en;
+#endif
 	mbhc->hphl_swh = hph_swh;
 	mbhc->gnd_swh = gnd_swh;
 	mbhc->micbias_enable = false;
