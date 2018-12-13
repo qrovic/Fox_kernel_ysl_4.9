@@ -730,7 +730,7 @@ export DISABLE_CFI
 endif
 
 ifdef CONFIG_PROFILE_ALL_BRANCHES
-KBUILD_CFLAGS	+= -O2 $(call cc-disable-warning,maybe-uninitialized,)
+KBUILD_CFLAGS	+= -O3 $(call cc-disable-warning,maybe-uninitialized,)
 else
 ifeq ($(cc-name),clang)
 KBUILD_CFLAGS   += -O3
@@ -740,7 +740,7 @@ KBUILD_CFLAGS	+= -mllvm -polly \
 		   -mllvm -polly-opt-fusion=max \
 		   -mllvm -polly-vectorizer=polly
 else
-KBUILD_CFLAGS   += -O2
+KBUILD_CFLAGS   += -O3
 endif
 endif
 endif
