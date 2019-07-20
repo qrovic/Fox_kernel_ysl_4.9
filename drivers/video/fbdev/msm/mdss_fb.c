@@ -48,6 +48,8 @@
 #include <linux/dma-buf.h>
 #include <linux/mdss_io_util.h>
 #include <linux/wakelock.h>
+#include <linux/devfreq_boost.h>
+
 #include "mdss_dsi.h"
 #include <linux/cpu_input_boost.h>
 #include "mdss_fb.h"
@@ -5491,6 +5493,7 @@ int mdss_fb_do_ioctl(struct fb_info *info, unsigned int cmd,
 		if (cpu_input_boost_within_input(3250)) {
 			cpu_input_boost_kick();
 		}
+		devfreq_boost_kick(DEVFREQ_MSM_CPUBW);
 		ret = mdss_fb_atomic_commit_ioctl(info, argp, file);
 		break;
 
