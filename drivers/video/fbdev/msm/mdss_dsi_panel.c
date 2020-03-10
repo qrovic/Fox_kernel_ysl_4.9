@@ -46,6 +46,10 @@ bool is_display_on()
 
 static char g_lcd_id[MDSS_MAX_PANEL_LEN];
 
+static bool ce_enable = true;
+static bool srgb_enable = true;
+static bool cabc_enable = false;
+
 void mdss_dsi_panel_pwm_cfg(struct mdss_dsi_ctrl_pdata *ctrl)
 {
 	if (ctrl->pwm_pmi)
