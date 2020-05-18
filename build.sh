@@ -12,7 +12,7 @@ rm -rf zip
 echo -e "$green << cloning toolchain bish >> \n $white"
 git clone https://github.com/arter97/arm64-gcc /root/itsvixano/toolchain_64
 
-export LOCALVERSION=-r1.0
+export LOCALVERSION=-r2.0-nightly-oc
 
 export ARCH=arm64
 export SUBARCH=arm64
