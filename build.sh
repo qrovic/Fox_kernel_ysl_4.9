@@ -10,14 +10,14 @@ rm -rf out
 rm -rf zip
 
 echo -e "$green << cloning toolchain bish >> \n $white"
-git clone https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 -b lineage-17.1 /root/itsvixano/toolchain_64
+git clone https://github.com/arter97/arm64-gcc /root/itsvixano/toolchain_64
 
 export LOCALVERSION=-r1.0
 
 export ARCH=arm64
 export SUBARCH=arm64
 export HEADER_ARCH=arm64
-export CROSS_COMPILE=/root/itsvixano/toolchain_64/bin/aarch64-linux-android-
+export CROSS_COMPILE=/root/itsvixano/toolchain_64/bin/aarch64-elf-
 
 export KBUILD_BUILD_HOST="Beta"
 export KBUILD_BUILD_USER="ItsVixano"
@@ -51,13 +51,13 @@ Diff=$(($End - $Start))
                 cp -r out/arch/arm64/boot/Image.gz-dtb zip/
                 cd zip
                 mv Image.gz-dtb zImage
-                zip -r Test-kernel_ysl.zip *
+                zip -r Test-kernel_ysl-gcc10.zip *
                 echo -e "$green << done bish  >> \n $white"
         fi
 
         if [ $exit_code -eq 0 ]; then
                echo -e "$yellow << pushing kranul on sarbur bish >> \n $white"
-               cp Test-kernel_ysl.zip /var/www/html
+               cp Test-kernel_ysl-gcc10.zip /var/www/html
                echo -e "$green << done bish >> \n $white"
                exit
 	fi
