@@ -3218,15 +3218,6 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 		goto out;
 	}
 
-	err = ufshcd_map_sg(hba, lrbp);
-	if (err) {
-		lrbp->cmd = NULL;
-		clear_bit_unlock(tag, &hba->lrb_in_use);
-		ufshcd_release_all(hba);
-		ufshcd_vops_pm_qos_req_end(hba, cmd->request, true);
-		goto out;
-	}
-
 	err = ufshcd_vops_crypto_engine_cfg_start(hba, tag);
 	if (err) {
 		if (err != -EAGAIN)
