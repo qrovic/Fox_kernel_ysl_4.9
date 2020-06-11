@@ -10,9 +10,9 @@ rm -rf out
 rm -rf zip
 
 echo -e "$green << cloning toolchain bish >> \n $white"
-git clone https://github.com/arter97/arm64-gcc /root/itsvixano/toolchain_64
+git clone https://github.com/ItsVixano/aarch64-elf-9.3.0 /root/itsvixano/toolchain_64
 
-export LOCALVERSION=-r2.0-nightly-nonco
+export LOCALVERSION=-r2.0-nightly-nonoc
 
 export ARCH=arm64
 export SUBARCH=arm64
@@ -51,13 +51,13 @@ Diff=$(($End - $Start))
                 cp -r out/arch/arm64/boot/Image.gz-dtb zip/
                 cd zip
                 mv Image.gz-dtb zImage
-                zip -r Test-kernel_ysl-gcc10.zip *
+                zip -r Test-kernel_ysl-gcc9.zip *
                 echo -e "$green << done bish  >> \n $white"
         fi
 
         if [ $exit_code -eq 0 ]; then
                echo -e "$yellow << pushing kranul on sarbur bish >> \n $white"
-               cp Test-kernel_ysl-gcc10.zip /var/www/html
+               cp Test-kernel_ysl-gcc9.zip /var/www/html
                echo -e "$green << done bish >> \n $white"
                exit
 	fi
