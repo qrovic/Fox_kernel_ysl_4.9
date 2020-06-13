@@ -9,7 +9,7 @@ echo -e "$green << cleanup bish >> \n $white"
 rm -rf out
 rm -rf zip
 
-echo -e "$green << cloning toolchain bish >> \n $white"
+echo -e "$green << clonng toolchain bish >> \n $white"
 git clone https://github.com/ItsVixano/aarch64-elf-9.3.0 /root/itsvixano/toolchain_64
 
 export LOCALVERSION=-r2.0-nightly-nonoc
