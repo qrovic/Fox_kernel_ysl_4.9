@@ -8,9 +8,9 @@ steps:
 - name: FoxKernel-ysl
   image: panchajanya1999/archlinux:latest
   environment:
-    Apibot:
-      from_secret: Apibot
+    APIBOT:
+      from_secret: apibot
     CHATID:
-      from_secret: CHATID
+      from_secret: chatid
   commands:
   - "curl https://raw.githubusercontent.com/Fox-kernel/myscripts/master/ysl-nonoc.sh | bash"
